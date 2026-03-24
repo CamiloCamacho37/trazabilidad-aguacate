@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Redirigiendo…</title>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const idLote = params.get("idLote");
+
+console.log("ID Lote recibido:", idLote);
+    (function () {
+      var q = window.location.search || "";
+      window.location.replace("Trazabilidad.html" + q);
+    })();
+  </script>
+</head>
+<body>
+  <p>Si no redirige, <a href="Trazabilidad.html">abre Trazabilidad.html</a>.</p>
+</body>
+</html>
