@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trazabilidad de Aguacate - Registro</title>
+    <style>
+        :root{
+
+            /* Paleta inspirada en aguacate y campo */
+            --bg:#f4f7f0;           /* crema muy suave */
+            --bg-top:#e8f5e9;       /* verde campo claro */
+            --panel:#ffffff;        /* tarjetas blancas */
+            --muted:#647a5a;        /* texto secundario verde grisáceo */
+            --text:#1f3b1f;         /* texto principal verde muy oscuro */
+            --accent:#d9a441;       /* dorado suave (pulpa) para acentos */
+            --ok:#2e7d32;
+            --warn:#f9a825;
+            --danger:#c62828;
+            --border:rgba(113,140,96,.35);
+            --input-bg:#f7fbf5;
+        }
+        *{box-sizing:border-box}
+        body{
+            margin:0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+            background:
+                radial-gradient(1200px 600px at 15% 0%, rgba(200,230,201,.8), transparent 60%),
+                radial-gradient(900px 500px at 90% 0%, rgba(255,241,188,.7), transparent 55%),
+                linear-gradient(to bottom, var(--bg-top), var(--bg));
+            color:var(--text);
+        }
+        .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px}
+        header{
+            display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;
+            margin-bottom:18px
+        }
+        h1{font-size:22px;margin:0}
+        .subtitle{color:var(--muted);margin-top:6px;line-height:1.35}
+        .grid{display:grid;grid-template-columns: 1.1fr .9fr;gap:14px}
+        @media (max-width: 980px){.grid{grid-template-columns:1fr}}
+        .card{
+            background:var(--panel);
+            border:1px solid var(--border);
+            border-radius:14px;
+            padding:16px;
+            backdrop-filter: blur(6px);
+        }
+        .card h2{margin:0 0 10px 0;font-size:16px}
+        .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        @media (max-width: 620px){.row{grid-template-columns:1fr}}
+        label{display:block;font-size:12px;color:var(--muted);margin:10px 0 6px}
+        input, select, textarea{
+            width:100%;
+            padding:10px 10px;
+            border-radius:10px;
+            border:1px solid var(--border);
+            background:var(--input-bg);
+            color:var(--text);
+            outline:none;
+        }
+        textarea{min-height:84px;resize:vertical}
+        .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+        button{
+            border:1px solid rgba(0,0,0,0.03);
+            background:rgba(217,164,65,.12);
+            color:var(--text);
+            padding:10px 12px;
+            border-radius:10px;
+            cursor:pointer;
+            font-weight:600;
+        }
+        button.primary{
+            background:linear-gradient(135deg, rgba(217,164,65,.9), rgba(243,210,115,.95));
+            border-color:rgba(206,161,64,1);
+            color:#2b2312;
+        }
+        button.ghost{background:transparent}
+        button.danger{background:rgba(198,40,40,.08);border-color:rgba(198,40,40,.55);color:#5b1717}
+        .pill{
+            display:inline-flex;align-items:center;gap:8px;
+            padding:6px 10px;border-radius:999px;border:1px solid var(--border);
+            color:var(--muted);font-size:12px
+        }
+        .status-dot{width:8px;height:8px;border-radius:50%;}
+        .dot-ok{background:var(--ok)}
+        .dot-warn{background:var(--warn)}
+        .dot-danger{background:var(--danger)}
+        .muted{color:var(--muted)}
+        .split{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+        .qrbox{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+        canvas{background:#fff;border-radius:10px;padding:8px}
+        .history{display:grid;gap:12px;margin-top:12px}
+        .section{
+            border:1px solid var(--border);
+            border-radius:14px;
+            overflow:hidden;
+        }
+        .section-header{
+            padding:10px 12px;
+            background:rgba(255,255,255,.04);
+            display:flex;align-items:center;justify-content:space-between;gap:10px;
+            border-bottom:1px solid var(--border);
+        }
+        .section-title{font-weight:800}
+        .events{padding:10px 12px;display:grid;gap:10px}
+        .event{
+            border:1px solid rgba(113,140,96,.28);
+            border-radius:12px;
+            padding:10px 12px;
+            background:#f7fbf5;
+        }
+        .event-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+        .event-title{font-weight:800}
+        .event-meta{font-size:12px;color:var(--muted)}
+        .kbd{font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; padding:2px 6px; border:1px solid var(--border); border-radius:8px; color:var(--muted); background:#f2f7ed}
+        a{color:#a46d15}
+        .hidden{display:none !important}
+        .form-section{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+        .form-section h3{font-size:14px;margin:0 0 10px 0;color:var(--text);font-weight:800}
+        .form-section h3 .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(217,164,65,.35);font-size:12px;margin-right:8px}
+        .dist-dl{display:grid;gap:6px;font-size:13px;margin-top:8px}
+        .dist-dl div{display:grid;grid-template-columns:140px 1fr;gap:8px}
+        .dist-dl strong{color:var(--muted);font-weight:600}
+    </style>
+</head>
+<body>
+    <script>
+        // Solo administrador: sesión en sessionStorage (se pierde al cerrar el navegador)
+        (function () {
+            const STORAGE_ADMIN_SESSION = "aguacate_admin_session_v2";
+            const SESSION_TTL_MS = 8 * 60 * 60 * 1000;
+
+            function isSessionValid() {
+                try {
+                    const raw = sessionStorage.getItem(STORAGE_ADMIN_SESSION);
+                    if (!raw) return false;
+                    const s = JSON.parse(raw);
+                    if (!s || !s.createdAt) return false;
+                    return (Date.now() - Number(s.createdAt)) < SESSION_TTL_MS;
+                } catch {
+                    return false;
+                }
+            }
+
+            try {
+                localStorage.removeItem("aguacate_admin_session_v1");
+            } catch (_) {}
+
+            if (!isSessionValid()) {
+                window.location.replace("login.html");
+            }
+        })();
+    </script>
+
+    <div class="wrap">
+        <header>
+            <div>
+                <h1>Registro de trazabilidad de aguacate</h1>
+                <div class="subtitle">
+                    <b>Campo</b>: eventos en origen. <b>Distribución</b> en dos fases: <b>Fase 1</b> (campo → industria) y <b>Fase 2</b> (industria → punto de venta), con los datos de identificación, transporte, fechas, ruta, estado y responsables.
+                    Un <b>QR</b> por lote muestra todo en la trazabilidad pública.
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+                <button id="btnLogout" class="ghost" type="button" title="Cerrar sesión admin">Cerrar sesión</button>
+                <div class="pill" id="estadoCadena">
+                <span class="status-dot dot-warn"></span>
+                <span class="muted">Cargando cadena…</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="grid">
+            <section class="card">
+                <h2>Nuevo evento</h2>
+                <form id="formEvento" novalidate>
+                    <div class="row">
+                        <div>
+                            <label for="idLote">1. Identificación — ID del lote</label>
+                            <input id="idLote" type="text" placeholder="Ej: LOTE-2026-001" required />
+                        </div>
+                        <div>
+                            <label for="categoria">Tipo de registro</label>
+                            <select id="categoria" required>
+                                <option value="campo">Campo (origen)</option>
+                                <option value="distribucion">Distribución (envío)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Panel CAMPO -->
+                    <div id="panelCampo">
+                        <div class="form-section">
+                            <h3><span class="num">A</span> Campo</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="etapa">Etapa / Evento</label>
+                                    <input id="etapa" type="text" placeholder="Ej: Siembra, cosecha, etc." />
+                                </div>
+                                <div>
+                                    <label for="ubicacion">Ubicación</label>
+                                    <input id="ubicacion" type="text" placeholder="Ej: Finca El Roble" />
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div>
+                                    <label for="responsable">Responsable</label>
+                                    <input id="responsable" type="text" placeholder="Ej: Juan Pérez" />
+                                </div>
+                                <div>
+                                    <label for="fechaEvento">Fecha del evento</label>
+                                    <input id="fechaEvento" type="datetime-local" />
+                                    <div class="muted" style="font-size:12px;margin-top:6px">Vacío = fecha actual.</div>
+                                </div>
+                            </div>
+                            <label for="detalles">Detalles / Observaciones</label>
+                            <textarea id="detalles" placeholder="Ej: fertilizante, riego, plagas…"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Panel DISTRIBUCIÓN (2 fases) -->
+                    <div id="panelDistribucion" class="hidden">
+                        <div class="form-section">
+                            <h3><span class="num">B</span> Fase de distribución</h3>
+                            <label for="faseDistribucion">¿Qué tramo registras?</label>
+                            <select id="faseDistribucion">
+                                <option value="campo_industria">Fase 1: Campo → Industria</option>
+                                <option value="industria_punto_venta">Fase 2: Industria → Punto de venta</option>
+                            </select>
+                        </div>
+
+                        <div class="form-section">
+                            <h3><span class="num">1</span> Identificación</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="idEnvio">ID del envío</label>
+                                    <input id="idEnvio" type="text" placeholder="Ej: ENV-2026-0142" />
+                                </div>
+                                <div></div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3><span class="num">2</span> Transporte</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="empresaTransporte">Empresa transportadora</label>
+                                    <input id="empresaTransporte" type="text" placeholder="Nombre de la empresa" />
+                                </div>
+                                <div>
+                                    <label for="placaVehiculo">Placa del vehículo</label>
+                                    <input id="placaVehiculo" type="text" placeholder="Ej: ABC123" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3><span class="num">3</span> Fechas</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="fechaSalida">Fecha y hora de salida</label>
+                                    <input id="fechaSalida" type="datetime-local" />
+                                </div>
+                                <div>
+                                    <label for="fechaLlegada">Fecha y hora de llegada</label>
+                                    <input id="fechaLlegada" type="datetime-local" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3><span class="num">4</span> Ubicación</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="origen">Origen</label>
+                                    <input id="origen" type="text" placeholder="Campo, planta, bodega…" />
+                                </div>
+                                <div>
+                                    <label for="destino">Destino</label>
+                                    <input id="destino" type="text" placeholder="Industria, centro, tienda…" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-section">
+                            <h3><span class="num">5</span> Estado del producto</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="estadoAlSalir">Estado al salir</label>
+                                    <input id="estadoAlSalir" type="text" placeholder="Ej: En buen estado, refrigerado…" />
+                                </div>
+                                <div>
+                                    <label for="estadoAlLlegar">Estado al llegar</label>
+                                    <input id="estadoAlLlegar" type="text" placeholder="Ej: Conforme, observaciones…" />
+                                </div>
+                            </div>
+                            <label for="cantidadRecibida">Cantidad recibida</label>
+                            <input id="cantidadRecibida" type="text" placeholder="Ej: 500 kg, 200 cajas…" />
+                        </div>
+
+                        <div class="form-section">
+                            <h3><span class="num">6</span> Responsables</h3>
+                            <div class="row">
+                                <div>
+                                    <label for="personaEntrega">Persona que entrega</label>
+                                    <input id="personaEntrega" type="text" placeholder="Nombre completo" />
+                                </div>
+                                <div>
+                                    <label for="personaRecibe">Persona que recibe</label>
+                                    <input id="personaRecibe" type="text" placeholder="Nombre completo" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <label for="detallesDist">Observaciones adicionales (opcional)</label>
+                        <textarea id="detallesDist" placeholder="Notas del envío…"></textarea>
+                    </div>
+
+                    <div class="actions">
+                        <button class="primary" type="submit">Guardar evento (bloque)</button>
+                        <button class="ghost" id="btnLimpiar" type="button">Limpiar</button>
+                        <button class="danger" id="btnResetCadena" type="button">Reiniciar cadena</button>
+                    </div>
+                </form>
+            </section>
+
+            <aside class="card">
+                <h2>QR del lote</h2>
+                <div class="split">
+                    <div>
+                        <div class="muted">Este QR abre la vista pública del lote:</div>
+                        <div style="margin-top:8px">
+                            <span class="muted">URL:</span>
+                            <div class="kbd" id="urlLote">—</div>
+                        </div>
+                        <div style="margin-top:10px">
+                            <a id="linkAbrir" href="#" target="_blank" rel="noopener">Abrir trazabilidad</a>
+                        </div>
+                    </div>
+                    <div class="qrbox">
+                        <canvas id="qrCanvas" width="200" height="200"></canvas>
+                    </div>
+                </div>
+                <div class="muted" style="margin-top:10px;font-size:12px">
+                    Sugerencia: imprime el QR y pégalo en la caja/empaque del lote.
+                </div>
+
+                <div style="margin-top:12px">
+                    <label for="qrBaseUrl">URL base para el QR (opcional)</label>
+                    <input id="qrBaseUrl" type="url" placeholder="Ej: http://192.168.1.5:8000/Proyecto%201er%20corte/" />
+                    <div class="muted" style="font-size:11px;margin-top:6px">
+                        Si escaneas con el <b>celular</b>, usa el mismo Wi‑Fi y la IP de tu PC con un servidor local (ej. <span class="kbd">python -m http.server 8000</span>). El QR con <span class="kbd">file://</span> no abre en el móvil.
+                    </div>
+                </div>
+                <div id="qrAviso" class="muted" style="margin-top:8px;font-size:12px;color:var(--danger);display:none"></div>
+
+                <hr style="border:0;border-top:1px solid var(--border);margin:14px 0" />
+
+                <h2>Ver historial</h2>
+                <label for="filtroLote">Filtrar por ID de lote</label>
+                <input id="filtroLote" type="text" placeholder="Ej: LOTE-2026-001" />
+                <div class="actions">
+                    <button id="btnVer" type="button">Ver trazabilidad</button>
+                    <button id="btnVerTodo" class="ghost" type="button">Ver todo</button>
+                </div>
+            </aside>
+        </div>
+
+        <section class="card" style="margin-top:14px">
+            <h2>Historial (agrupado por categoría)</h2>
+            <div class="muted">Cada evento es un bloque encadenado. El QR abre <span class="kbd">Trazabilidad.html?idLote=...</span> con el historial completo.</div>
+            <div id="historial" class="history" aria-live="polite"></div>
+        </section>
+    </div>
+
+    <!-- CryptoJS (hash SHA256) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+    <!-- Comprimir datos del lote en el QR (para ver trazabilidad en otro dispositivo) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.5.0/lz-string.min.js"></script>
+    <!-- QR generator -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <!-- Lógica de la cadena de bloques -->
+    <script src="CadenasdeBloques.js"></script>
+
+    <script>
+        const $ = (id) => document.getElementById(id);
+
+        const estadoCadena = $("estadoCadena");
+        const form = $("formEvento");
+        const btnLimpiar = $("btnLimpiar");
+        const btnResetCadena = $("btnResetCadena");
+        const btnLogout = $("btnLogout");
+
+        const filtroLote = $("filtroLote");
+        const btnVer = $("btnVer");
+        const btnVerTodo = $("btnVerTodo");
+        const historial = $("historial");
+
+        const urlLote = $("urlLote");
+        const linkAbrir = $("linkAbrir");
+        const categoriaSel = $("categoria");
+        const panelCampo = $("panelCampo");
+        const panelDistribucion = $("panelDistribucion");
+
+        const qr = new QRious({
+            element: $("qrCanvas"),
+            value: "—",
+            size: 200
+        });
+
+        function setEstado(tipo, texto) {
+            const dot = estadoCadena.querySelector(".status-dot");
+            dot.classList.remove("dot-ok", "dot-warn", "dot-danger");
+            dot.classList.add(tipo === "ok" ? "dot-ok" : tipo === "danger" ? "dot-danger" : "dot-warn");
+            estadoCadena.querySelector("span.muted").textContent = texto;
+        }
+
+        function categoriaLabel(cat) {
+            const c = (cat || "").toLowerCase();
+            if (c === "campo") return "Campo";
+            if (c === "distribucion" || c === "distribución" || c === "industria") return "Distribución";
+            return cat || "—";
+        }
+
+        function faseLabel(fase) {
+            if (fase === "campo_industria") return "Fase 1: Campo → Industria";
+            if (fase === "industria_punto_venta") return "Fase 2: Industria → Punto de venta";
+            return "";
+        }
+
+        function syncPanels() {
+            const esDist = categoriaSel.value === "distribucion";
+            panelCampo.classList.toggle("hidden", esDist);
+            panelDistribucion.classList.toggle("hidden", !esDist);
+            panelCampo.querySelectorAll("input, select, textarea").forEach((el) => {
+                el.disabled = esDist;
+            });
+            panelDistribucion.querySelectorAll("input, select, textarea").forEach((el) => {
+                el.disabled = !esDist;
+            });
+        }
+
+        function htmlEscape(s) {
+            const t = String(s ?? "");
+            return t
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function bloqueDistribucionDetalle(ev) {
+            if (!ev.faseDistribucion) return "";
+            const rows = [
+                ["ID envío", ev.idEnvio],
+                ["Empresa transporte", ev.empresaTransporte],
+                ["Placa", ev.placaVehiculo],
+                ["Salida", formatFecha(ev.fechaSalida)],
+                ["Llegada", formatFecha(ev.fechaLlegada)],
+                ["Origen", ev.origen],
+                ["Destino", ev.destino],
+                ["Estado al salir", ev.estadoAlSalir],
+                ["Estado al llegar", ev.estadoAlLlegar],
+                ["Cantidad recibida", ev.cantidadRecibida],
+                ["Entrega", ev.personaEntrega],
+                ["Recibe", ev.personaRecibe],
+            ];
+            const inner = rows
+                .map(
+                    ([k, v]) =>
+                        `<div><strong>${htmlEscape(k)}</strong><span>${htmlEscape(v || "—")}</span></div>`
+                )
+                .join("");
+            return `<div class="dist-dl">${inner}</div>`;
+        }
+
+        function renderTarjetaEvento(ev) {
+            const hashShort = ev.blockHash ? String(ev.blockHash).slice(0, 18) + "…" : "—";
+            const titulo = ev.etapa || "Evento";
+            const sub =
+                ev.faseDistribucion != null
+                    ? `<span class="muted" style="font-weight:600">(${htmlEscape(faseLabel(ev.faseDistribucion))})</span>`
+                    : `<span class="muted" style="font-weight:600">(${htmlEscape(categoriaLabel(ev.categoria))})</span>`;
+
+            const cuerpo = ev.faseDistribucion
+                ? `<div class="event-meta" style="margin-top:4px"><span class="kbd">Lote: ${htmlEscape(ev.idLote || "—")}</span></div>${bloqueDistribucionDetalle(ev)}`
+                : `<div class="event-meta" style="margin-top:4px">
+                        <span class="kbd">${htmlEscape(ev.idLote || "—")}</span>
+                        <span class="muted">·</span>
+                        <span>${htmlEscape(ev.ubicacion || "—")}</span>
+                        <span class="muted">·</span>
+                        <span>${htmlEscape(ev.responsable || "—")}</span>
+                   </div>`;
+
+            const det = ev.detalles
+                ? `<div class="muted" style="margin-top:8px;white-space:pre-wrap">${htmlEscape(ev.detalles)}</div>`
+                : "";
+
+            return `
+                <div class="event-top">
+                    <div>
+                        <div class="event-title">${htmlEscape(titulo)} ${sub}</div>
+                        <div class="event-meta">
+                            <span class="kbd">Bloque #${ev.blockIndex != null ? ev.blockIndex : "—"}</span>
+                            <span class="muted">·</span>
+                            <span class="kbd">${htmlEscape(hashShort)}</span>
+                        </div>
+                        ${cuerpo}
+                    </div>
+                    <div class="event-meta">${formatFecha(ev.fechaEvento || ev.createdAt)}</div>
+                </div>
+                ${det}
+            `;
+        }
+
+        function formatFecha(isoOrDate) {
+            try {
+                const d = new Date(isoOrDate);
+                return isNaN(d.getTime()) ? "—" : d.toLocaleString();
+            } catch {
+                return "—";
+            }
+        }
+
+        const QR_BASE_KEY = "aguacate_qr_base_url";
+
+        function getBaseHrefForQr() {
+            const custom = (document.getElementById("qrBaseUrl") && $("qrBaseUrl").value.trim()) || localStorage.getItem(QR_BASE_KEY) || "";
+            if (custom) {
+                const u = custom.endsWith("/") ? custom : custom + "/";
+                return u;
+            }
+            return window.location.href;
+        }
+
+        function buildLoteUrl(idLote) {
+            const baseHref = getBaseHrefForQr();
+            const u = new URL("Trazabilidad.html", baseHref);
+            u.searchParams.set("idLote", idLote);
+
+            const aviso = $("qrAviso");
+            if (aviso) {
+                aviso.style.display = "none";
+                aviso.textContent = "";
+            }
+
+            if (window.naniCoin && typeof LZString !== "undefined") {
+                let evs = window.naniCoin.getEventos({ idLote });
+                const tryPack = (list) => {
+                    const json = JSON.stringify(list);
+                    return LZString.compressToEncodedURIComponent(json);
+                };
+                let z = tryPack(evs);
+                if (z.length > 1800) {
+                    evs = evs.map((e) => {
+                        const c = { ...e };
+                        delete c.detalles;
+                        return c;
+                    });
+                    z = tryPack(evs);
+                }
+                if (z.length <= 2400) {
+                    u.searchParams.set("z", z);
+                }
+                let final = u.toString();
+                if (final.length > 3600) {
+                    u.searchParams.delete("z");
+                    final = u.toString();
+                    if (aviso) {
+                        aviso.style.display = "block";
+                        aviso.textContent =
+                            "URL demasiado larga para el QR: se omitió la copia embebida. Usa servidor http o menos eventos.";
+                    }
+                }
+            }
+
+            return u.toString();
+        }
+
+        function getBaseHrefForQr() {
+            return "http://192.168.56.102:8000/";
+            }
+
+        function updateQR(idLote) {
+            if (!idLote) return;
+
+            let url = "";
+
+            try {
+                console.log("Intentando generar URL QR para el lote:", idLote);
+                const u = new URL("Trazabilidad.html", getBaseHrefForQr());
+                u.searchParams.set("idLote", idLote);
+                url = u.toString();
+
+                 if (url.length > 500) {
+                 console.error("URL QR demasiado larga:", url);
+                 throw new Error("URL demasiado larga");
+                 } else {
+                    console.log("URL QR generada:", url);
+                    qr.set({ value: url });
+                 }
+                }
+             catch (e) {
+                console.warn("Fallback QR:", e);
+                const u = new URL("Trazabilidad.html", getBaseHrefForQr());
+                u.searchParams.set("idLote", idLote);
+                url = u.toString();
+                console.log("URL QR (fallback):", url);
+                //qr.set({ value: url });.
+                qr.set({ value: "https://google.com" });
+
+                 if ($("qrAviso")) {
+                    $("qrAviso").style.display = "block";
+                    $("qrAviso").textContent =
+                        "QR simplificado (solo ID del lote).";
+                 }
+                }
+            urlLote.textContent = url;
+            linkAbrir.href = url;
+            linkAbrir.textContent = "Abrir trazabilidad del lote";
+        }
+
+        function groupByCategoria(eventos) {
+            const grupos = { campo: [], distF1: [], distF2: [], distLegacy: [], otros: [] };
+            for (const ev of eventos) {
+                const cat = (ev.categoria || "").toLowerCase();
+                if (cat === "campo") grupos.campo.push(ev);
+                else if (cat === "distribucion" || cat === "distribución" || cat === "industria") {
+                    if (ev.faseDistribucion === "campo_industria") grupos.distF1.push(ev);
+                    else if (ev.faseDistribucion === "industria_punto_venta") grupos.distF2.push(ev);
+                    else grupos.distLegacy.push(ev);
+                } else grupos.otros.push(ev);
+            }
+            return grupos;
+        }
+
+        function renderHistorial(idLoteFilter = "") {
+            if (!window.naniCoin) return;
+
+            const idLote = (idLoteFilter || "").trim();
+            const eventos = window.naniCoin.getEventos({ idLote });
+            const grupos = groupByCategoria(eventos);
+
+            historial.innerHTML = "";
+
+            const orden = [
+                ["campo", "Campo"],
+                ["distF1", "Distribución — Fase 1 (Campo → Industria)"],
+                ["distF2", "Distribución — Fase 2 (Industria → Punto de venta)"],
+                ["distLegacy", "Distribución (registros anteriores / sin fase)"],
+                ["otros", "Otros"]
+            ];
+
+            let total = 0;
+            for (const [key, label] of orden) {
+                const list = grupos[key];
+                if (!list.length) continue;
+                total += list.length;
+
+                const section = document.createElement("div");
+                section.className = "section";
+
+                const header = document.createElement("div");
+                header.className = "section-header";
+                header.innerHTML = `<div class="section-title">${label}</div><div class="muted">${list.length} evento(s)</div>`;
+
+                const eventsDiv = document.createElement("div");
+                eventsDiv.className = "events";
+
+                for (const ev of list) {
+                    const el = document.createElement("div");
+                    el.className = "event";
+                    el.innerHTML = renderTarjetaEvento(ev);
+                    eventsDiv.appendChild(el);
+                }
+
+                section.appendChild(header);
+                section.appendChild(eventsDiv);
+                historial.appendChild(section);
+            }
+
+            if (!total) {
+                historial.innerHTML = `<div class="muted">No hay eventos para mostrar${idLote ? ` en el lote <span class="kbd">${idLote}</span>` : ""}.</div>`;
+            }
+        }
+
+        function init() {
+            if (!window.naniCoin) {
+                setEstado("danger", "Error: la cadena no está disponible.");
+                return;
+            }
+            setEstado("ok", "Cadena lista (persistente en este navegador).");
+            renderHistorial("");
+            //updateQR("");
+        }
+
+        categoriaSel.addEventListener("change", syncPanels);
+
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (!window.naniCoin) return;
+
+            const idLote = $("idLote").value.trim();
+            const categoria = $("categoria").value.trim();
+
+            if (!idLote) {
+                alert("Indica el ID del lote.");
+                return;
+            }
+
+            try {
+                if (categoria === "campo") {
+                    const etapa = $("etapa").value.trim();
+                    const ubicacion = $("ubicacion").value.trim();
+                    const responsable = $("responsable").value.trim();
+                    const fechaEventoInput = $("fechaEvento").value;
+                    const detalles = $("detalles").value.trim();
+                    if (!etapa || !ubicacion || !responsable) {
+                        alert("En Campo: completa etapa, ubicación y responsable.");
+                        return;
+                    }
+                    const fechaEvento = fechaEventoInput
+                        ? new Date(fechaEventoInput).toISOString()
+                        : new Date().toISOString();
+                    window.naniCoin.addEvento({
+                        idLote,
+                        categoria: "campo",
+                        etapa,
+                        ubicacion,
+                        responsable,
+                        fechaEvento,
+                        detalles,
+                    });
+                } else {
+                    window.naniCoin.addEvento({
+                        idLote,
+                        categoria: "distribucion",
+                        faseDistribucion: $("faseDistribucion").value.trim(),
+                        idEnvio: $("idEnvio").value.trim(),
+                        empresaTransporte: $("empresaTransporte").value.trim(),
+                        placaVehiculo: $("placaVehiculo").value.trim(),
+                        fechaSalida: $("fechaSalida").value,
+                        fechaLlegada: $("fechaLlegada").value,
+                        origen: $("origen").value.trim(),
+                        destino: $("destino").value.trim(),
+                        estadoAlSalir: $("estadoAlSalir").value.trim(),
+                        estadoAlLlegar: $("estadoAlLlegar").value.trim(),
+                        cantidadRecibida: $("cantidadRecibida").value.trim(),
+                        personaEntrega: $("personaEntrega").value.trim(),
+                        personaRecibe: $("personaRecibe").value.trim(),
+                        detalles: $("detallesDist").value.trim(),
+                    });
+                }
+            } catch (err) {
+                alert(err.message || "No se pudo guardar.");
+                return;
+            }
+
+            updateQR(idLote);
+            filtroLote.value = idLote;
+            renderHistorial(idLote);
+            alert("Bloque guardado en la cadena.");
+        });
+
+        btnLimpiar.addEventListener("click", () => {
+            form.reset();
+            syncPanels();
+            //updateQR("");
+        });
+
+        btnResetCadena.addEventListener("click", () => {
+            if (!window.naniCoin) return;
+            const ok = confirm("Esto borrará la cadena guardada en este navegador. ¿Continuar?");
+            if (!ok) return;
+            window.naniCoin.reset();
+            filtroLote.value = "";
+            //updateQR("");
+            renderHistorial("");
+        });
+
+        btnVer.addEventListener("click", () => {
+            const idLote = filtroLote.value.trim();
+            updateQR(idLote);
+            renderHistorial(idLote);
+        });
+
+        btnVerTodo.addEventListener("click", () => {
+            filtroLote.value = "";
+            updateQR("");
+            renderHistorial("");
+        });
+
+        btnLogout.addEventListener("click", () => {
+            try {
+                sessionStorage.removeItem("aguacate_admin_session_v2");
+                localStorage.removeItem("aguacate_admin_session_v1");
+            } catch {}
+            window.location.replace("login.html");
+        });
+
+        filtroLote.addEventListener("input", () => {
+            updateQR(filtroLote.value.trim());
+        });
+
+        const qrBaseInput = $("qrBaseUrl");
+        if (qrBaseInput) {
+            qrBaseInput.value = localStorage.getItem(QR_BASE_KEY) || "";
+            qrBaseInput.addEventListener("change", () => {
+                localStorage.setItem(QR_BASE_KEY, qrBaseInput.value.trim());
+                updateQR(filtroLote.value.trim() || $("idLote").value.trim());
+            });
+        }
+
+        syncPanels();
+        init();
+    </script>
+
+</body>
+</html>
